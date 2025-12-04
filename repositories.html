@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代码仓库 - Xplorer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0f111a;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+
+    /* Canvas 背景 */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 固定侧边栏 */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100vh;
+      background: rgba(15, 17, 26, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      border-right: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-item {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #9095a8;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 8px 4px;
+    }
+
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 0;
+      background: linear-gradient(180deg, #6366f1, #8b5cf6);
+      transition: height 0.3s ease;
+    }
+
+    .nav-item.active::after {
+      height: 24px;
+    }
+
+    .nav-item:hover {
+      color: #a78bfa;
+    }
+
+    /* 内容区 */
+    .content {
+      margin-left: 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 页头 */
+    .page-header {
+      min-height: 50vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .page-header h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      letter-spacing: -1px;
+    }
+
+    .page-header .subtitle {
+      font-size: 1.1rem;
+      color: #a78bfa;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+
+    /* 仓库网格 */
+    .repos-container {
+      padding: 4rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .repos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .repo-card {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .repo-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .repo-card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+      transform: translateY(-5px);
+    }
+
+    .repo-card:hover::before {
+      left: 100%;
+    }
+
+    .repo-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #a78bfa;
+      position: relative;
+      z-index: 1;
+    }
+
+    .repo-card p {
+      color: #9095a8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .repo-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #6b7280;
+      position: relative;
+      z-index: 1;
+    }
+
+    .repo-tag {
+      background: rgba(99, 102, 241, 0.15);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      color: #a78bfa;
+    }
+
+    .repo-link {
+      color: #6366f1;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .repo-link:hover {
+      color: #8b5cf6;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: 80px;
+        flex-direction: row;
+        top: auto;
+        bottom: 0;
+        border-right: none;
+        border-top: 1px solid rgba(99, 102, 241, 0.1);
+        justify-content: space-around;
+        gap: 1rem;
+      }
+
+      .nav-item {
+        writing-mode: horizontal-tb;
+        text-orientation: initial;
+        font-size: 11px;
+      }
+
+      .nav-item::after {
+        right: auto;
+        bottom: -8px;
+        width: 0;
+        height: 2px;
+      }
+
+      .nav-item.active::after {
+        width: 24px;
+        height: 2px;
+      }
+
+      .content {
+        margin-left: 0;
+        margin-bottom: 80px;
+      }
+
+      .page-header {
+        min-height: 40vh;
+      }
+
+      .repos-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    section {
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="sidebar">
+    <div class="nav-item" data-href="index.html">主页</div>
+    <div class="nav-item active" data-href="repositories.html">代码仓库</div>
+    <div class="nav-item" data-href="articles.html">文章</div>
+  </div>
+
+  <div class="content">
+    <section class="page-header">
+      <h1>代码仓库</h1>
+      <div class="subtitle">我的开源项目和研究代码</div>
+    </section>
+
+    <section class="repos-container">
+      <div class="repos-grid" id="reposGrid">
+        <!-- 动态生成 -->
+      </div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // 动态生成仓库卡片
+    document.addEventListener('DOMContentLoaded', () => {
+      const reposGrid = document.getElementById('reposGrid');
+      siteConfig.repositories.forEach(repo => {
+        const card = document.createElement('div');
+        card.className = 'repo-card';
+        card.onclick = () => window.open(repo.url, '_blank');
+        card.innerHTML = `
+          <h3>${repo.icon} ${repo.title}</h3>
+          <p>${repo.desc}</p>
+          <div class="repo-meta">
+            <span class="repo-tag">${repo.tags.join(' · ')}</span>
+            <a class="repo-link" href="${repo.url}" target="_blank">查看仓库 →</a>
+          </div>
+        `;
+        reposGrid.appendChild(card);
+      });
+    });
+
+    // Canvas 粒子背景
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = Math.random() * 1.5 + 0.5;
+        this.life = Math.random() * 0.5 + 0.5;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const dx = mousePos.x - this.x;
+        const dy = mousePos.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 200) {
+          this.vx += dx * 0.0001;
+          this.vy += dy * 0.0001;
+        }
+
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+
+      draw() {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(1, '#8b5cf6');
+
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = this.life * 0.6;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function initParticles() {
+      particles.length = 0;
+      const particleCount = Math.min(200, Math.max(100, (canvas.width * canvas.height) / 10000));
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = '#0f111a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制粒子间的连接线
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < 150) {
+            const gradient = ctx.createLinearGradient(particles[i].x, particles[i].y, particles[j].x, particles[j].y);
+            gradient.addColorStop(0, '#6366f1');
+            gradient.addColorStop(1, '#8b5cf6');
+            
+            ctx.strokeStyle = gradient;
+            ctx.globalAlpha = (1 - dist / 150) * 0.3;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('mousemove', e => {
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+    initParticles();
+    animate();
+
+    // 导航
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const href = item.dataset.href;
+        if (href) {
+          window.location.href = href;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

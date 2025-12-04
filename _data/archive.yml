@@ -1,9 +1,0 @@
-- type: home        # 新增：主页导航
-  title: 主页
-  url: /
-- type: dates       # 保持type为dates（用于按日期归档）
-  title: 代码仓库     # 修改显示名称为"代码仓库"
-  url: /codes/       # 修改路径为/code/
-- type: tags        # 保持type为tags（用于按标签归档）
-  title: 笔记仓库     # 修改显示名称为"笔记仓库"
-  url: /notes/      # 修改路径为/notes/

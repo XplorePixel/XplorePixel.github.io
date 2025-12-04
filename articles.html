@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章 - Xplorer</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0f111a;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+
+    /* Canvas 背景 */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 固定侧边栏 */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100vh;
+      background: rgba(15, 17, 26, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      border-right: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-item {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #9095a8;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 8px 4px;
+    }
+
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 0;
+      background: linear-gradient(180deg, #6366f1, #8b5cf6);
+      transition: height 0.3s ease;
+    }
+
+    .nav-item.active::after {
+      height: 24px;
+    }
+
+    .nav-item:hover {
+      color: #a78bfa;
+    }
+
+    /* 内容区 */
+    .content {
+      margin-left: 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 页头 */
+    .page-header {
+      min-height: 50vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .page-header h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      letter-spacing: -1px;
+    }
+
+    .page-header .subtitle {
+      font-size: 1.1rem;
+      color: #a78bfa;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+
+    /* 文章列表 */
+    .articles-container {
+      padding: 4rem 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .articles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .article-item {
+      background: rgba(99, 102, 241, 0.05);
+      border-left: 3px solid rgba(99, 102, 241, 0.3);
+      border-radius: 8px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .article-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.15), transparent);
+      transition: left 0.5s ease;
+      z-index: 0;
+    }
+
+    .article-item:hover {
+      border-left-color: rgba(99, 102, 241, 0.8);
+      background: rgba(99, 102, 241, 0.1);
+      transform: translateX(10px);
+    }
+
+    .article-item:hover::before {
+      left: 100%;
+    }
+
+    .article-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .article-title {
+      font-size: 1.3rem;
+      color: #a78bfa;
+      margin-bottom: 0.5rem;
+      transition: color 0.3s;
+    }
+
+    .article-item:hover .article-title {
+      color: #c4b5fd;
+    }
+
+    .article-date {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .article-desc {
+      color: #9095a8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .article-tag {
+      background: rgba(99, 102, 241, 0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      color: #a78bfa;
+      font-size: 0.85rem;
+    }
+
+    .read-more {
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .read-more:hover {
+      color: #8b5cf6;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: 80px;
+        flex-direction: row;
+        top: auto;
+        bottom: 0;
+        border-right: none;
+        border-top: 1px solid rgba(99, 102, 241, 0.1);
+        justify-content: space-around;
+        gap: 1rem;
+      }
+
+      .nav-item {
+        writing-mode: horizontal-tb;
+        text-orientation: initial;
+        font-size: 11px;
+      }
+
+      .nav-item::after {
+        right: auto;
+        bottom: -8px;
+        width: 0;
+        height: 2px;
+      }
+
+      .nav-item.active::after {
+        width: 24px;
+        height: 2px;
+      }
+
+      .content {
+        margin-left: 0;
+        margin-bottom: 80px;
+      }
+
+      .page-header {
+        min-height: 40vh;
+      }
+
+      .article-item {
+        padding: 1.25rem;
+      }
+
+      .article-title {
+        font-size: 1.1rem;
+      }
+    }
+
+    section {
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="sidebar">
+    <div class="nav-item" data-href="index.html">主页</div>
+    <div class="nav-item" data-href="repositories.html">代码仓库</div>
+    <div class="nav-item active" data-href="articles.html">文章</div>
+  </div>
+
+  <div class="content">
+    <section class="page-header">
+      <h1>文章</h1>
+      <div class="subtitle">分享技术洞察和研究思考</div>
+    </section>
+
+    <section class="articles-container">
+      <div class="articles-list" id="articlesList">
+        <!-- 动态生成 -->
+      </div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // 动态生成文章列表
+    document.addEventListener('DOMContentLoaded', () => {
+      const articlesList = document.getElementById('articlesList');
+      siteConfig.articles.forEach(article => {
+        const item = document.createElement('div');
+        item.className = 'article-item';
+        item.onclick = () => {
+          if (article.url !== '#') {
+            window.open(article.url, '_blank');
+          } else {
+            alert('文章内容开发中…');
+          }
+        };
+        const tagsHtml = article.tags.map(tag => `<span class="article-tag">${tag}</span>`).join('');
+        item.innerHTML = `
+          <div class="article-content">
+            <div class="article-title">${article.title}</div>
+            <div class="article-date">${article.date}</div>
+            <div class="article-desc">${article.desc}</div>
+            <div class="article-meta">
+              ${tagsHtml}
+              <a class="read-more" href="javascript:void(0)">阅读更多 →</a>
+            </div>
+          </div>
+        `;
+        articlesList.appendChild(item);
+      });
+    });
+
+    // Canvas 粒子背景
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = Math.random() * 1.5 + 0.5;
+        this.life = Math.random() * 0.5 + 0.5;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const dx = mousePos.x - this.x;
+        const dy = mousePos.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 200) {
+          this.vx += dx * 0.0001;
+          this.vy += dy * 0.0001;
+        }
+
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+
+      draw() {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(1, '#8b5cf6');
+
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = this.life * 0.6;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function initParticles() {
+      particles.length = 0;
+      const particleCount = Math.min(200, Math.max(100, (canvas.width * canvas.height) / 10000));
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = '#0f111a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制粒子间的连接线
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < 150) {
+            const gradient = ctx.createLinearGradient(particles[i].x, particles[i].y, particles[j].x, particles[j].y);
+            gradient.addColorStop(0, '#6366f1');
+            gradient.addColorStop(1, '#8b5cf6');
+            
+            ctx.strokeStyle = gradient;
+            ctx.globalAlpha = (1 - dist / 150) * 0.3;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('mousemove', e => {
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+    initParticles();
+    animate();
+
+    // 导航
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const href = item.dataset.href;
+        if (href) {
+          window.location.href = href;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

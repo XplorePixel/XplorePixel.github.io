@@ -1,3 +1,498 @@
----
-layout: home
----
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xplorer - RNA · Machine Learning · Silence</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0f111a;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+
+    /* Canvas 背景 */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 固定侧边栏 */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100vh;
+      background: rgba(15, 17, 26, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      border-right: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .nav-item {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #9095a8;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 8px 4px;
+    }
+
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 0;
+      background: linear-gradient(180deg, #6366f1, #8b5cf6);
+      transition: height 0.3s ease;
+    }
+
+    .nav-item.active::after {
+      height: 24px;
+    }
+
+    .nav-item:hover {
+      color: #a78bfa;
+    }
+
+    /* 内容区 */
+    .content {
+      margin-left: 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero 区 */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .hero-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      letter-spacing: -2px;
+    }
+
+    .hero .subtitle {
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      color: #a78bfa;
+      letter-spacing: 3px;
+      margin-bottom: 3rem;
+      font-weight: 300;
+    }
+
+    /* 简介区 */
+    .bio-section {
+      padding: 6rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      line-height: 1.8;
+      color: #d0d5dd;
+      font-size: 1.1rem;
+      font-weight: 300;
+    }
+
+    .bio-section p {
+      margin-bottom: 1.5rem;
+    }
+
+    /* 联系方式区 */
+    .contact-section {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .contact-icons {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .icon-link {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .icon-link:hover {
+      background: rgba(99, 102, 241, 0.2);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), inset 0 0 30px rgba(139, 92, 246, 0.2);
+      transform: scale(1.1);
+    }
+
+    .icon-link svg {
+      width: 28px;
+      height: 28px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      color: #a78bfa;
+    }
+
+    /* Coming Soon 区 */
+    .coming-soon-section {
+      padding: 6rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .coming-soon-section h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #a78bfa;
+    }
+
+    .coming-soon-section p {
+      color: #9095a8;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    /* 响应式 - 手机端 */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: 80px;
+        flex-direction: row;
+        top: auto;
+        bottom: 0;
+        border-right: none;
+        border-top: 1px solid rgba(99, 102, 241, 0.1);
+        justify-content: space-around;
+        gap: 1rem;
+      }
+
+      .nav-item {
+        writing-mode: horizontal-tb;
+        text-orientation: initial;
+        font-size: 11px;
+      }
+
+      .nav-item::after {
+        right: auto;
+        bottom: -8px;
+        width: 0;
+        height: 2px;
+      }
+
+      .nav-item.active::after {
+        width: 24px;
+        height: 2px;
+      }
+
+      .content {
+        margin-left: 0;
+        margin-bottom: 80px;
+      }
+
+      .hero {
+        min-height: 80vh;
+      }
+
+      .hero-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+      }
+
+      .bio-section {
+        padding: 4rem 1.5rem;
+        font-size: 1rem;
+      }
+
+      .contact-icons {
+        gap: 1.5rem;
+      }
+
+      .icon-link {
+        width: 50px;
+        height: 50px;
+      }
+
+      .icon-link svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    /* 平滑淡入效果 */
+    section {
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    #hero { animation-delay: 0.2s; }
+    #bio { animation-delay: 0.4s; }
+    #contact { animation-delay: 0.6s; }
+    #coming-soon { animation-delay: 0.8s; }
+  </style>
+</head>
+<body>
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="sidebar">
+    <div class="nav-item active" data-target="hero" data-href="index.html">主页</div>
+    <div class="nav-item" data-href="repositories.html">代码仓库</div>
+    <div class="nav-item" data-href="articles.html">文章</div>
+  </div>
+
+  <div class="content">
+    <section id="hero" class="hero">
+      <div class="hero-avatar" id="profileAvatar">🧬</div>
+      <h1 id="profileName">Xplorer</h1>
+      <div class="subtitle" id="profileSubtitle">RNA · Machine Learning · Silence</div>
+    </section>
+
+    <section id="bio" class="bio-section">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="aboutTitle">关于我</h2>
+      <p style="margin-bottom: 2rem;" id="aboutIntro">我是一名对生物信息学和深度学习充满热情的研究者。专注于 siRNA 序列预测与 RNA 深度学习研究，通过融合生物信息学与机器学习，探索化学修饰 RNA 的高效靶标识别策略。相信优雅的算法能够解码生命的秘密。</p>
+      <p style="margin-bottom: 2rem; color: #9095a8;" id="aboutPassion">在编程方面，我热衷于用 Python 进行科学计算和数据分析，用 JavaScript 创作沉浸式的可视化交互体验。致力于开发高效、优雅的工具和方法，让科研工作变得更有意思。</p>
+      <p style="color: #a78bfa; font-style: italic;" id="aboutMotto">"静坐思考，优雅编码，让数据讲述生命的故事。"</p>
+    </section>
+
+    <section id="contact" class="contact-section">
+      <div class="contact-icons">
+        <div class="icon-link" title="Email" onclick="copyEmail()">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div class="icon-link" title="GitHub" onclick="openGitHub()">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.603-3.369-1.343-3.369-1.343-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.544 2.914 1.184.09-.92.35-1.545.636-1.9-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="coming-soon" class="coming-soon-section">
+      <h2>Coming Soon</h2>
+      <p>正在研究更强大的 tokenized learned embeddings 与化学修饰 siRNA 预测模型，敬请期待。</p>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    // 初始化页面数据
+    document.addEventListener('DOMContentLoaded', () => {
+      const avatar = siteConfig.profile.avatar;
+      const avatarEl = document.getElementById('profileAvatar');
+      
+      // 判断是否是图片文件
+      if (avatar.endsWith('.jpg') || avatar.endsWith('.png') || avatar.endsWith('.gif')) {
+        avatarEl.style.backgroundImage = `url('${avatar}')`;
+        avatarEl.style.backgroundSize = 'cover';
+        avatarEl.style.backgroundPosition = 'center';
+        avatarEl.textContent = '';
+      } else {
+        // emoji 模式
+        avatarEl.textContent = avatar;
+      }
+      
+      document.getElementById('profileName').textContent = siteConfig.profile.name;
+      document.getElementById('profileSubtitle').textContent = siteConfig.profile.subtitle;
+      document.getElementById('aboutTitle').textContent = siteConfig.about.title;
+      document.getElementById('aboutIntro').textContent = siteConfig.about.intro;
+      document.getElementById('aboutPassion').textContent = siteConfig.about.passion;
+      document.getElementById('aboutMotto').textContent = '"' + siteConfig.about.motto + '"';
+    });
+
+    // Canvas 粒子背景
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = Math.random() * 1.5 + 0.5;
+        this.life = Math.random() * 0.5 + 0.5;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const dx = mousePos.x - this.x;
+        const dy = mousePos.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 200) {
+          this.vx += dx * 0.0001;
+          this.vy += dy * 0.0001;
+        }
+
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+
+      draw() {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(1, '#8b5cf6');
+
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = this.life * 0.6;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function initParticles() {
+      particles.length = 0;
+      const particleCount = Math.min(200, Math.max(100, (canvas.width * canvas.height) / 10000));
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = '#0f111a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('mousemove', e => {
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    });
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+    initParticles();
+    animate();
+
+    // 导航
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const href = item.dataset.href;
+        const target = item.dataset.target;
+        
+        if (href) {
+          window.location.href = href;
+        } else if (target) {
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          document.getElementById(target).scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // 联系方式
+    function copyEmail() {
+      const email = siteConfig.profile.email;
+      navigator.clipboard.writeText(email).then(() => {
+        alert('邮箱已复制: ' + email);
+      });
+    }
+
+    function openGitHub() {
+      window.open(siteConfig.profile.githubUrl, '_blank');
+    }
+  </script>
+</body>
+</html>
