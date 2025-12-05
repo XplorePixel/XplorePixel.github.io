@@ -13,6 +13,20 @@ const siteConfig = {
     githubUrl: 'https://github.com/XplorePixel',
   },
 
+  // 星尘特效配置（可被 index.html 读取并覆盖默认行为）
+  starEffect: {
+    // 持续时间（毫秒）
+    duration: 1000,
+    // 粒子数量下限
+    minParticles: 50,
+    // 粒子数量上限
+    maxParticles: 200,
+    // 面积除数：用于根据屏幕面积计算粒子数量（area / areaDivisor）
+    areaDivisor: 1000,
+    // 颜色调色板（数组）
+    palette: ['#fff7d6', '#ffd1a8', '#ffd6f0', '#cfe9ff', '#ffffff']
+  },
+
   // 关于我部分
   about: {
     title: '关于我',

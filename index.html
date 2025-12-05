@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xplorer - RNA · Machine Learning · Silence</title>
+  <title>Xplorer - AI4Science</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -306,10 +306,36 @@
     #bio { animation-delay: 0.4s; }
     #contact { animation-delay: 0.6s; }
     #coming-soon { animation-delay: 0.8s; }
+    /* 右上角星尘触发按钮 */
+    .star-button {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10050;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(139,92,246,0.95));
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(99,102,241,0.18), 0 2px 6px rgba(0,0,0,0.4);
+      transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+      backdrop-filter: blur(6px);
+    }
+
+    .star-button:hover { transform: translateY(-3px) scale(1.05); }
+    .star-button:active { transform: translateY(0) scale(0.98); }
+
   </style>
 </head>
 <body>
   <canvas id="particle-canvas"></canvas>
+  <button id="starBtn" class="star-button" title="星尘秀">✨</button>
 
   <div class="sidebar">
     <div class="nav-item active" data-target="hero" data-href="index.html">主页</div>
@@ -321,7 +347,7 @@
     <section id="hero" class="hero">
       <div class="hero-avatar" id="profileAvatar">🧬</div>
       <h1 id="profileName">Xplorer</h1>
-      <div class="subtitle" id="profileSubtitle">RNA · Machine Learning · Silence</div>
+      <div class="subtitle" id="profileSubtitle">AI4Science</div>
     </section>
 
     <section id="bio" class="bio-section">
@@ -465,6 +491,164 @@
 
     initParticles();
     animate();
+
+    // 星尘特效（全屏展示大量粒子星星并淡出）
+    function triggerStarShow() {
+      if (window._starRunning) return;
+      window._starRunning = true;
+
+      const overlay = document.createElement('canvas');
+      overlay.id = 'star-overlay-canvas';
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.zIndex = '10000';
+      overlay.style.pointerEvents = 'none';
+      document.body.appendChild(overlay);
+
+      const ctx2 = overlay.getContext('2d');
+      function resizeOverlay() {
+        overlay.width = window.innerWidth;
+        overlay.height = window.innerHeight;
+      }
+      resizeOverlay();
+      window.addEventListener('resize', resizeOverlay);
+
+
+      const stars = [];
+      const effectCfg = (window.siteConfig && siteConfig.starEffect) || {};
+      const DURATION = effectCfg.duration || 3800;
+      const minParticles = effectCfg.minParticles || 20;
+      const maxParticles = effectCfg.maxParticles || 100;
+      const areaDivisor = effectCfg.areaDivisor || 2000;
+      const palette = Array.isArray(effectCfg.palette) && effectCfg.palette.length ? effectCfg.palette : ['#fff7d6','#ffd1a8','#ffd6f0','#cfe9ff','#ffffff'];
+
+      const area = overlay.width * overlay.height;
+      const count = Math.min(maxParticles, Math.max(minParticles, Math.floor(area / areaDivisor)));
+
+      function randColor() {
+        return palette[Math.floor(Math.random() * palette.length)];
+      }
+
+      // 五角星尺寸（像素）——比原来大得多以满足 “大颗星星” 的视觉要求
+      const minStarSize = Math.max(6, Math.min(10, Math.floor(Math.min(overlay.width, overlay.height) / 120)));
+      const maxStarSize = Math.max(14, Math.min(36, Math.floor(Math.min(overlay.width, overlay.height) / 45)));
+
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * overlay.width,
+          y: Math.random() * overlay.height,
+          vx: (Math.random() - 0.5) * (2 + Math.random() * 5),
+          vy: (Math.random() - 0.5) * (2 + Math.random() * 5),
+          size: Math.random() * (maxStarSize - minStarSize) + minStarSize,
+          angle: Math.random() * Math.PI * 2,
+          av: (Math.random() - 0.5) * 0.06,
+          color: randColor(),
+        });
+      }
+
+      const start = performance.now();
+
+      // 绘制五角星：使用路径并填充径向渐变 + 中间高光
+      function drawFivePointStar(x, y, outerR, color, alpha, rotation) {
+        const ctxx = ctx2;
+        const spikes = 5;
+        const innerR = outerR * 0.45;
+        ctxx.save();
+        ctxx.translate(x, y);
+        ctxx.rotate(rotation || 0);
+
+        const g = ctxx.createRadialGradient(0, 0, 0, 0, 0, outerR * 2);
+        g.addColorStop(0, `rgba(255,255,255,${Math.min(1, alpha)})`);
+        g.addColorStop(0.18, color);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+
+        ctxx.fillStyle = g;
+        ctxx.beginPath();
+        // start at top point
+        for (let i = 0; i < spikes; i++) {
+          const outerAngle = ((-90 + i * (360 / spikes)) * Math.PI) / 180;
+          const innerAngle = ((-90 + (i * (360 / spikes)) + (360 / (spikes * 2))) * Math.PI) / 180;
+          const ox = Math.cos(outerAngle) * outerR;
+          const oy = Math.sin(outerAngle) * outerR;
+          const ix = Math.cos(innerAngle) * innerR;
+          const iy = Math.sin(innerAngle) * innerR;
+          if (i === 0) ctxx.moveTo(ox, oy);
+          else ctxx.lineTo(ox, oy);
+          ctxx.lineTo(ix, iy);
+        }
+        ctxx.closePath();
+        ctxx.fill();
+
+        // 中心高光小圆
+        ctxx.globalAlpha = Math.min(1, alpha * 0.9);
+        ctxx.beginPath();
+        ctxx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctxx.arc(0, 0, Math.max(1, outerR * 0.18), 0, Math.PI * 2);
+        ctxx.fill();
+        ctxx.globalAlpha = 1;
+
+        ctxx.restore();
+      }
+
+      function frame(t) {
+        const elapsed = t - start;
+        const progress = Math.min(1, elapsed / DURATION);
+        ctx2.clearRect(0, 0, overlay.width, overlay.height);
+
+        for (let i = 0; i < stars.length; i++) {
+          const s = stars[i];
+          // accelerate outward as progress increases
+          s.x += s.vx * (1 + progress * 1.8);
+          s.y += s.vy * (1 + progress * 1.8);
+          s.angle += s.av * (1 + progress * 0.6);
+          // slight twinkle and fade
+          const a = Math.max(0, (1 - progress) * (0.95 + Math.sin((i + elapsed / 20) * 0.15) * 0.18));
+          const drawSize = s.size * (1 + progress * 0.5);
+          // skip drawing tiny alpha to save cpu
+          if (a > 0.02) drawFivePointStar(s.x, s.y, drawSize, s.color, a, s.angle);
+        }
+
+        if (elapsed < DURATION) {
+          requestAnimationFrame(frame);
+        } else {
+          // 淡出覆盖层
+          const fadeStart = performance.now();
+          function fade(t2) {
+            const f = Math.min(1, (t2 - fadeStart) / 550);
+            ctx2.fillStyle = `rgba(15,17,26,${f})`;
+            ctx2.fillRect(0, 0, overlay.width, overlay.height);
+            if (f < 1) {
+              requestAnimationFrame(fade);
+            } else {
+              try { document.body.removeChild(overlay); } catch (e) {}
+              window._starRunning = false;
+              window.removeEventListener('resize', resizeOverlay);
+            }
+          }
+          requestAnimationFrame(fade);
+        }
+      }
+
+      requestAnimationFrame(frame);
+      // 给按钮一个轻微的点击回馈动画
+      const btn = document.getElementById('starBtn');
+      if (btn && btn.animate) {
+        btn.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.14)' },
+          { transform: 'scale(1)' }
+        ], { duration: 520, easing: 'ease-out' });
+      }
+    }
+
+    // 按钮绑定
+    const starBtnEl = document.getElementById('starBtn');
+    if (starBtnEl) {
+      starBtnEl.addEventListener('click', triggerStarShow);
+    }
 
     // 导航
     document.querySelectorAll('.nav-item').forEach(item => {
