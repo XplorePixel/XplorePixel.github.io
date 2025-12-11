@@ -55,7 +55,7 @@ const siteConfig = {
       icon: '📁',
       title: 'FileRename',
       desc: '文件批量重命名工具，支持多种文件类型，纯 Python 原生实现',
-      tags: ['文件重命名', 'Python', '可视化 GUI 操作'],
+      tags: ['文件重命名', 'Python', '可视化'],
       url: 'https://github.com/XplorePixel/FileRename',
     },
 
