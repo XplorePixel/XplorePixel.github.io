@@ -38,7 +38,7 @@ const siteConfig = {
   // 代码仓库
   repositories: [
     {
-      icon: '🧬',
+      icon: '📖',
       title: 'Jittor-DKD',
       desc: '使用Jittor框架复现DKD蒸馏方法',
       tags: ['知识蒸馏','Jittor'],
@@ -51,11 +51,19 @@ const siteConfig = {
       tags: ['图像处理', '二值化', '边缘检测'],
       url: 'https://github.com/XplorePixel/IIPC-Smart-Car-Race',
     },
+    {
+      icon: '📁',
+      title: 'FileRename',
+      desc: '文件批量重命名工具，支持多种文件类型，纯 Python 原生实现',
+      tags: ['文件重命名', 'Python', '可视化 GUI 操作'],
+      url: 'https://github.com/XplorePixel/FileRename',
+    },
+
 
 
   ],
 
-  // 文章
+  // 文章 
   articles: [
     {
       title: '666',
