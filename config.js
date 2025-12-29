@@ -45,8 +45,15 @@ const siteConfig = {
       url: 'https://github.com/XplorePixel/Jittor_DKD',
     },
     {
+      icon: '🚘',
+      title: '2024-SCR 发行版',
+      desc: '全国大学生智能车竞赛2024赛季国赛代码发行版',
+      tags: ['目标检测', '路径规划', 'PID控制'],
+      url: 'https://github.com/XplorePixel/2024-SCR-Release',
+    },
+        {
       icon: '🏎️',
-      title: 'IPC-Smart-Car-Race',
+      title: 'IIPC-Smart-Car-Race 教程',
       desc: '全国大学生智能车竞赛——图像处理培训资料',
       tags: ['图像处理', '二值化', '边缘检测'],
       url: 'https://github.com/XplorePixel/IIPC-Smart-Car-Race',
